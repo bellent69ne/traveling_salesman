@@ -1,0 +1,330 @@
+package algorithm
+
+import (
+    "fmt"
+)
+
+const (
+    stars  = "****************************************************************"
+)
+
+func copyMatrix(baseMatrix [][]int) [][]int {
+    matrix := make([][]int, len(baseMatrix))
+    for i := range matrix {
+        matrix[i] = make([]int, len(baseMatrix[i]))
+    }
+
+    for i, row := range baseMatrix {
+        for j, val := range row {
+            matrix[i][j] = val
+        }
+    }
+
+    return matrix
+}
+
+func cityNames(matrix [][]int) ([]rune, []rune) {
+    namesByRow := make([]rune, len(matrix))
+    namesByColumn := make([]rune, len(matrix[0]))
+
+    for i := range namesByRow {
+        namesByRow[i] = rune('A') + rune(i)
+    }
+    for i := range namesByColumn {
+        namesByColumn[i] = rune('A') + rune(i)
+    }
+
+    return namesByRow, namesByColumn
+}
+
+func printMatrix(matrix [][]int) {
+    fmt.Println(stars)
+    fmt.Println()
+    for _, row := range matrix {
+        for _, val := range row {
+            fmt.Printf("%v\t", val)
+        }
+        fmt.Println()
+    }
+    fmt.Println()
+    fmt.Println(stars)
+}
+
+func printCalculations(calculations []string) {
+    for _, val := range calculations {
+        fmt.Println(val)
+    }
+}
+
+func Calculate() {
+    baseMatrix := [][]int{{-1, 7, 6, 8, 4},
+                          {7, -1, 8, 5, 6},
+                          {6, 8, -1, 9, 7},
+                          {8, 5, 9, -1, 8},
+                          {4, 6, 7, 8, -1}}
+
+    matrix := copyMatrix(baseMatrix)
+    namesByRow, namesByColumn := cityNames(matrix)
+    _ = namesByRow
+    _ = namesByColumn
+
+    fmt.Println("Base matrix")
+    printMatrix(matrix)
+    solutions := make([]coordinate, 0)
+   // calculations := make([]string, 0)//make(map[rune]rune, 0)
+    //for len(solutions) != len(baseMatrix) - 1{
+        fmt.Println("Row minimization")
+        rowMinimization(matrix, solutions)
+        printMatrix(matrix)
+        fmt.Println("Column minimization")
+        columnMinimization(matrix, solutions)
+        printMatrix(matrix)
+        fmt.Println("Calculate Panelties")
+        kindlyPanelties := calculatePanelties(matrix, solutions)
+        fmt.Println(kindlyPanelties)
+        //solutions := make([]coordinate, 0)
+        coord := rowAndColumnToDestroy(matrix, kindlyPanelties, solutions)
+      //  calculations, namesByRow, namesByColumn = doSomeStuff(calculations, namesByRow, namesByColumn, coord)
+        solutions = append(solutions, coord)
+
+        //matrix = reduceMatrix(matrix, coord)
+      //  fmt.Println(solutions)
+        //printMatrix(matrix)
+    //}
+
+        fmt.Println("Row minimization")
+        rowMinimization(matrix, solutions)
+        printMatrix(matrix)
+        fmt.Println("Column minimization")
+        columnMinimization(matrix, solutions)
+        printMatrix(matrix)
+        fmt.Println("Calculate Panelties")
+        kindlyPanelties = calculatePanelties(matrix, solutions)
+        fmt.Println(kindlyPanelties)
+        //solutions := make([]coordinate, 0)
+        coord = rowAndColumnToDestroy(matrix, kindlyPanelties, solutions)
+      //  calculations, namesByRow, namesByColumn = doSomeStuff(calculations, namesByRow, namesByColumn, coord)
+        solutions = append(solutions, coord)
+    //printCalculations(calculations)
+    fmt.Println(solutions)
+}
+
+//func doSomeStuff(cities map[rune]rune, namesByRow, namesByColumn []rune, coord coordinate)
+    //                (map[rune]rune, []rune, []rune) {
+  //  cities[namesByRow[coord.row]] = namesByColumn[coord.column]
+
+
+//}
+
+/*func doSomeStuff(cities []string, namesByRow, namesByColumn []rune, 
+     coord coordinate) ([]string, []rune, []rune) {
+    //cities[namesByRow[coord.row]] = namesByColumn[coord.column]
+    cities = append(cities, string(namesByRow[coord.row]) + " -> " + string(namesByColumn[coord.column]))
+
+    temp := make([]rune, len(namesByRow) - 1)
+    index := 0
+    for i := range namesByRow {
+        if i == coord.row {
+            index--
+            continue
+        }
+        temp[i + index] = namesByRow[i]
+    }
+
+    namesByRow = temp
+
+    index = 0
+    for i := range namesByColumn {
+        if i == coord.column {
+            index--
+            continue
+        }
+        temp[i + index] = namesByColumn[i]
+    }
+
+    namesByColumn = temp
+
+    return cities, namesByRow, namesByColumn
+}
+*/
+
+func reduceMatrix(matrix [][]int, coord coordinate) [][]int {
+    newMatrix := make([][]int, len(matrix) - 1)
+    for i := range newMatrix {
+        newMatrix[i] = make([]int, len(matrix[i]) - 1)
+    }
+
+    matrix[coord.column][coord.row] = -1
+
+    rowIndex := 0
+    for i, row := range matrix {
+        if i == coord.row {
+            rowIndex++
+            continue
+        }
+        columnIndex := 0
+        for j, val := range row {
+            if j == coord.column {
+                columnIndex++
+                continue
+            }
+
+            newMatrix[i - rowIndex][j - columnIndex] = val
+        }
+    }
+
+    return newMatrix
+}
+
+func canProceed(index int, coordinates []coordinate, row bool) bool {
+    for _, coord := range coordinates {
+        val := 0
+        if row {
+            val = coord.row
+        } else {
+            val = coord.column
+        }
+        if index == val {
+            return false
+        }
+    }
+    return true
+}
+
+func rowMinimization(matrix [][]int, coordinates []coordinate) {
+    minimals := make([]int, 0)
+    for i, row := range matrix {
+        if !canProceed(i, coordinates, true) {
+            continue
+        }
+        min := 1000000000
+
+        for j, val := range row {
+            if !canProceed(j, coordinates, false) {
+                continue
+            }
+            if val != -1 && min > val {
+                min = val
+            }
+        }
+        minimals = append(minimals, min)
+    }
+
+    index := 0
+    for i, row := range matrix {
+        if !canProceed(i, coordinates, true) {
+            index--
+            continue
+        }
+        for j := range row {
+            if !canProceed(j, coordinates, false) {
+                continue
+            }
+            if row[j] != -1 {
+                row[j] -= minimals[i + index]
+            }
+        }
+    }
+}
+
+func columnMinimization(matrix [][]int, coordinates []coordinate) {
+    minimals := make([]int, 0)
+    for i := 0; i < len(matrix[0]); i++ {
+        if !canProceed(i, coordinates, false) {
+            continue
+        }
+        min := 1000000000
+        for j := 0; j < len(matrix); j++ {
+            if !canProceed(i, coordinates, true) {
+                continue
+            }
+            if matrix[j][i] != -1 && matrix[j][i] < min {
+                min = matrix[j][i]
+            }
+        }
+        minimals = append(minimals, min)
+    }
+
+    index := 0
+    for i := 0; i < len(matrix[0]); i++ {
+        if !canProceed(i, coordinates, false) {
+            index--
+            continue
+        }
+        for j := 0; j < len(matrix); j++ {
+            if !canProceed(j, coordinates, true) {
+                continue
+            }
+            if matrix[j][i] != -1 {
+                matrix[j][i] -= minimals[i + index]
+            }
+        }
+    }
+}
+
+type coordinate struct {
+    row, column int
+    destroyed bool
+}
+
+func calculatePanelties(matrix [][]int, solutions []coordinate) map[coordinate]int {
+    panelties := make(map[coordinate]int, 0)
+
+    coordinates := make([]coordinate, 0)
+    for i, row := range matrix {
+        if !canProceed(i, solutions, true) {
+            continue
+        }
+        for j, val := range row {
+            if !canProceed(j, solutions, false) {
+                continue
+            }
+            if val == 0 {
+                coordinates = append(coordinates, coordinate{i, j, false})
+            }
+        }
+    }
+
+    for _, val := range coordinates {
+        minByRow := 1000000000
+        for j := 0; j < len(matrix[val.row]); j++ {
+            if !canProceed(j, solutions, false) {
+                continue
+            }
+            if matrix[val.row][j] != -1 && j != val.column {
+                if minByRow > matrix[val.row][j] {
+                    minByRow = matrix[val.row][j]
+                }
+            }
+        }
+        minByColumn := 1000000000
+        for i := 0; i < len(matrix); i++ {
+            if !canProceed(i, solutions, true) {
+                continue
+            }
+            if matrix[i][val.column] != -1 && i != val.row {
+                if minByColumn > matrix[i][val.column] {
+                    minByColumn = matrix[i][val.column]
+                }
+            }
+        }
+
+        panelties[coordinate{val.row, val.column, val.destroyed}] = minByRow + minByColumn
+    }
+    return panelties
+}
+
+func rowAndColumnToDestroy(matrix [][]int,
+    panelties map[coordinate]int, solutions []coordinate) coordinate {
+    max := 0
+    key := coordinate{0, 0, false}
+    for k, val := range panelties {
+        if max < val {
+            max = val
+            key = k
+        }
+    }
+    key.destroyed = true
+
+    return key
+}
